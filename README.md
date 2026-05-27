@@ -1,6 +1,6 @@
 # MEGA Sync
 
-An Obsidian plugin that keeps a vault in two-way sync with a folder in [MEGA](https://mega.nz) cloud storage. Built for mobile and other platforms where FUSE-based MEGA sync clients are not available.
+An Obsidian plugin that keeps a vault in two-way sync with a folder in [MEGA](https://mega.nz) cloud storage. Built for mobile and other platforms where MEGA automatic background sync is not available.
 
 While the vault is open, local edits stream up to MEGA in real time. On **startup**, the plugin reconciles by treating the MEGA folder as the source of truth — anything that diverged while the vault was closed gets resolved in the MEGA remote folder's favor (either fully replaced or deleted).
 
