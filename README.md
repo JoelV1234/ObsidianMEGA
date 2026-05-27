@@ -13,15 +13,31 @@ While the vault is open, local edits stream up to MEGA in real time. On **startu
 
 ---
 
+## Installation
+
+The plugin is **not** in the Obsidian Community Plugins store yet, so you'll sideload it from a GitHub release.
+
+1. Download the latest release zip from [https://github.com/JoelV1234/obsidianMEGA/releases/tag/v0.8](https://github.com/JoelV1234/obsidianMEGA/releases/tag/v0.8).
+2. Extract the zip. You should get a folder containing at least `main.js`, `manifest.json`, and `styles.css`.
+3. Copy that folder into your vault's plugin directory:
+   - **Android:** `<your-vault>/.obsidian/plugins/` — use a file manager that can see hidden folders (Material Files, Solid Explorer, etc.). The `.obsidian` folder is hidden by default.
+   - **Desktop:** same path, `<your-vault>/.obsidian/plugins/`.
+4. In Obsidian, open **Settings → Community plugins**, enable Community plugins if prompted, refresh the installed list, and toggle **MEGA Sync** on.
+5. Continue with [Setup](#setup) below.
+
+To update later, replace the plugin folder with the contents of a newer release zip and restart Obsidian.
+
+---
+
 ## Setup
 
-1. Install and enable the plugin.
-2. Open the plugin's settings tab and start setup.
-3. Enter your MEGA email + password.
-4. Pick a remote folder.
-5. The plugin saves your credentials encrypted (see [src/crypto.ts](src/crypto.ts)) and kicks off the first sync.
+1. Open **Settings → MEGA Sync** and click **Setup**.
+2. Enter your MEGA email + password.
+3. Pick a remote folder using the tree picker (expand parents to reveal children, or use the search box).
+4. Confirm. The Settings dialog closes automatically and a full-screen sync overlay takes over while MEGA's contents are downloaded into the vault.
+5. When the overlay disappears, the live watcher is running and any further edits stream up to MEGA in real time.
 
-After setup, your credentials live in [`data.json`](data.json) alongside the sync cache.
+Your credentials are saved locally and encrypted (see [src/crypto.ts](src/crypto.ts)) inside [`data.json`](data.json) alongside the sync cache.
 
 ---
 
