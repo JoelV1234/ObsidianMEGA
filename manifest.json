@@ -1,9 +1,9 @@
 {
   "id": "mega-sync",
-  "name": "MEGA Sync",
+  "name": "Obsidian MEGA",
   "version": "0.1.0",
   "minAppVersion": "1.4.0",
   "description": "Sync your Obsidian vault with a MEGA folder. Designed for mobile and platforms lacking FUSE support.",
-  "author": "MEGA Sync",
+  "author": "Joel Vaz",
   "isDesktopOnly": false
 }
