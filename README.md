@@ -160,3 +160,10 @@ node esbuild.config.mjs production
 ```
 
 The bundled output is `main.js`, which Obsidian loads at runtime.
+
+---
+
+## TODO
+
+- [ ] Allow upload to vault on startup and a better management of file resolution and vault merging
+- [ ] Optimize when files and folders are moved
