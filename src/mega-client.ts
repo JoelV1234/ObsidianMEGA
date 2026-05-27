@@ -1,4 +1,4 @@
-import type { RemoteFolderNode } from "./types";
+import type { RemoteFolderTreeNode } from "./types";
 
 type MegaFile = any;
 type MegaStorage = any;
@@ -49,46 +49,27 @@ export class MegaClient {
     return this.storage;
   }
 
-  /** List top-level folders inside the Cloud Drive root, recursively (one level deep). */
-  listTopLevelFolders(): RemoteFolderNode[] {
+  /** Build a nested folder tree starting from the Cloud Drive root. */
+  getFolderTree(): RemoteFolderTreeNode[] {
     const storage = this.requireStorage();
     const root = storage.root;
     if (!root || !root.children) return [];
-    const folders: RemoteFolderNode[] = [];
-    for (const child of root.children) {
-      if (child.directory) {
-        folders.push({
+    const build = (node: MegaFile, prefix: string): RemoteFolderTreeNode[] => {
+      const out: RemoteFolderTreeNode[] = [];
+      for (const child of node.children || []) {
+        if (!child.directory) continue;
+        const path = `${prefix}/${child.name}`;
+        out.push({
           name: child.name,
-          path: `/${child.name}`,
+          path,
           handle: child.nodeId || child.handle,
+          children: build(child, path),
         });
       }
-    }
-    return folders;
-  }
-
-  /** List all folders recursively under root, with their full path. */
-  listAllFolders(): RemoteFolderNode[] {
-    const storage = this.requireStorage();
-    const root = storage.root;
-    if (!root) return [];
-    const out: RemoteFolderNode[] = [];
-    const walk = (node: MegaFile, prefix: string) => {
-      if (!node.children) return;
-      for (const child of node.children) {
-        if (child.directory) {
-          const path = `${prefix}/${child.name}`;
-          out.push({
-            name: child.name,
-            path,
-            handle: child.nodeId || child.handle,
-          });
-          walk(child, path);
-        }
-      }
+      out.sort((a, b) => a.name.localeCompare(b.name));
+      return out;
     };
-    walk(root, "");
-    return out;
+    return build(root, "");
   }
 
   findFolderByHandle(handle: string): MegaFile | null {

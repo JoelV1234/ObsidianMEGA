@@ -40,3 +40,10 @@ export interface RemoteFolderNode {
   path: string;
   handle: string;
 }
+
+export interface RemoteFolderTreeNode {
+  name: string;
+  path: string;
+  handle: string;
+  children: RemoteFolderTreeNode[];
+}

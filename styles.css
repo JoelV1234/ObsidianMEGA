@@ -18,31 +18,78 @@
   margin-top: 16px;
 }
 
-.mega-folder-list {
-  max-height: 320px;
-  overflow-y: auto;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 8px;
+.mega-folder-search {
   margin-bottom: 8px;
 }
 
-.mega-folder-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
-  border-radius: 4px;
+.mega-folder-search input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.9em;
 }
 
-.mega-folder-item:hover {
+.mega-folder-tree {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 6px 4px;
+  margin-bottom: 8px;
+  background: var(--background-secondary);
+}
+
+.mega-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.mega-folder-row:hover {
   background: var(--background-modifier-hover);
 }
 
-.mega-folder-item label {
+.mega-folder-toggle {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 16px;
+  font-size: 0.8em;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.mega-folder-toggle.is-clickable {
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.mega-folder-toggle.is-leaf {
+  opacity: 0.4;
+}
+
+.mega-folder-label {
   cursor: pointer;
   font-family: var(--font-monospace);
   font-size: 0.9em;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mega-folder-path-prefix {
+  color: var(--text-muted);
+}
+
+.mega-folder-row.is-search-hit {
+  padding-left: 6px;
 }
 
 /* --- Sync overlay --- */

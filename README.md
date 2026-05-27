@@ -1,8 +1,8 @@
 # MEGA Sync
 
-An Obsidian plugin that keeps a vault mirrored against a folder in [MEGA](https://mega.nz) cloud storage. Built for mobile and other platforms where FUSE-based MEGA sync clients aren't available.
+An Obsidian plugin that keeps a vault in two-way sync with a folder in [MEGA](https://mega.nz) cloud storage. Built for mobile and other platforms where FUSE-based MEGA sync clients aren't available.
 
-The vault is treated as a **mirror** of the MEGA folder: MEGA is the source of truth, and the plugin makes the local vault match it.
+While the vault is open, local edits stream up to MEGA in real time. On **startup**, the plugin reconciles by treating the MEGA folder as the source of truth — anything that diverged while the vault was closed gets resolved in MEGA's favor.
 
 ---
 
@@ -27,11 +27,11 @@ After setup, your credentials live in [`data.json`](data.json) alongside the syn
 
 ## How syncing works
 
-There are two distinct sync paths and they run at different times.
+Sync runs in two phases that handle different situations.
 
-### 1. Startup sync (MEGA → Local)
+### 1. Startup reconciliation (MEGA → Local)
 
-Runs **every time you open the vault**.
+Runs **every time you open the vault**. This is the only time MEGA gets to overwrite local state, and it's how the plugin recovers from any drift that happened while the vault was closed (edits from other devices, the MEGA web UI, another machine running this plugin, etc.).
 
 1. The plugin shows a full-screen "Syncing…" overlay and disables vault interaction.
 2. It lists every file and folder in your remote MEGA folder (metadata only, no downloads).
@@ -77,7 +77,7 @@ The sync index lives inside [`data.json`](data.json) under the `syncIndex` key. 
 ```
 
 | Field | What it records |
-|---|---|
+| --- | --- |
 | `remoteNodeId` | The unique ID MEGA assigned to this file the last time we downloaded it. MEGA mints a fresh ID whenever a file's bytes are replaced. |
 | `remoteSize` | The file's size in MEGA at that moment, in bytes. |
 | `localSize` | The file's size on disk right after we wrote it, in bytes. |
@@ -96,7 +96,7 @@ For every remote file encountered during a startup sync, the engine looks up its
 
 If all four match, the on-disk file is **definitely** the same one MEGA has, so the download is skipped. If any of the four differs, the file is downloaded from MEGA and the cache entry is refreshed.
 
-The remote-side checks catch changes made on other devices or via the MEGA web UI. The local-side checks catch tampering with files while the plugin wasn't running. Together they enforce the "perfect mirror" guarantee — anything inconsistent gets overwritten by MEGA's version.
+The remote-side checks catch changes made on other devices or via the MEGA web UI. The local-side checks catch tampering with files while the plugin wasn't running. Together they enforce the startup-reconciliation rule: anything that doesn't match what we last downloaded gets resolved by pulling MEGA's version.
 
 The skip logic is `canSkipDownload` in [src/sync-engine.ts](src/sync-engine.ts).
 
@@ -110,7 +110,7 @@ If you ever want to force a full re-download, delete `syncIndex` from `data.json
 
 ## Known caveats
 
-- **The vault is destructively mirrored from MEGA on every open.** Any file you created or edited while Obsidian was closed gets wiped if it isn't also in MEGA. Only edits made *during* a session — when the watcher is running — are pushed up.
+- **Startup reconciliation favors MEGA, destructively.** Any file you created or edited while Obsidian was closed gets wiped if it isn't also in MEGA. Only edits made *during* a session — when the live watcher is running — are pushed up. If you want to preserve offline edits, open Obsidian and let the session sync them before closing.
 - **Files edited during a session re-download once on next startup.** The watcher uploads them to MEGA, which assigns them a new node ID, but the cache isn't updated to reflect that. The next startup sees a node-ID mismatch and re-fetches the file. The download is wasted but the result is correct.
 - **`.obsidian/` is never synced.** Plugin lists, hotkeys, themes, and so on stay device-local.
 - **Credentials live on disk.** They're encrypted with a local key (see [src/crypto.ts](src/crypto.ts)), but the key is also stored locally — this protects against casual inspection of `data.json`, not against an attacker with filesystem access.
@@ -120,9 +120,9 @@ If you ever want to force a full re-download, delete `syncIndex` from `data.json
 ## File layout
 
 | Path | Role |
-|---|---|
+| --- | --- |
 | [src/main.ts](src/main.ts) | Plugin entry. Owns settings, the overlay, the status bar, and the startup flow. |
-| [src/sync-engine.ts](src/sync-engine.ts) | The mirror logic — initial sync, change detection, watcher event handling. |
+| [src/sync-engine.ts](src/sync-engine.ts) | Sync logic — startup reconciliation, change detection, live watcher event handling. |
 | [src/mega-client.ts](src/mega-client.ts) | Thin wrapper around the `megajs` library: login, walk, download, upload, delete. |
 | [src/crypto.ts](src/crypto.ts) | Symmetric encryption for the stored password. |
 | [src/setup-modal.ts](src/setup-modal.ts) | First-run wizard: credentials + folder picker. |
