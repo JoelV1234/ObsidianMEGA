@@ -18,14 +18,13 @@ While the vault is open, local edits stream up to MEGA in real time. On **startu
 The plugin is **not** in the Obsidian Community Plugins store yet, so you'll sideload it from a GitHub release.
 
 1. Download the latest release zip from [https://github.com/JoelV1234/obsidianMEGA/releases/tag/v0.8](https://github.com/JoelV1234/obsidianMEGA/releases/tag/v0.8).
-2. Extract the zip. You should get a folder containing at least `main.js`, `manifest.json`, and `styles.css`.
-3. Copy that folder into your vault's plugin directory:
+2. Place the zip inside your vault's plugin directory:
    - **Android:** `<your-vault>/.obsidian/plugins/` — use a file manager that can see hidden folders (Material Files, Solid Explorer, etc.). The `.obsidian` folder is hidden by default.
-   - **Desktop:** same path, `<your-vault>/.obsidian/plugins/`.
+3. Extract the zip in place. You should end up with a folder inside `plugins/` containing at least `main.js`, `manifest.json`, and `styles.css`. You can delete the zip afterward.
 4. In Obsidian, open **Settings → Community plugins**, enable Community plugins if prompted, refresh the installed list, and toggle **MEGA Sync** on.
 5. Continue with [Setup](#setup) below.
 
-To update later, replace the plugin folder with the contents of a newer release zip and restart Obsidian.
+To update later, place the new release zip in the same `plugins/` directory, extract it (replacing the old folder), and restart Obsidian.
 
 ---
 
