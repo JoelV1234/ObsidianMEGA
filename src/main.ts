@@ -91,6 +91,8 @@ export default class MegaSyncPlugin extends Plugin {
         initialSyncComplete: false,
       };
       await this.saveSettings();
+      // Close the Obsidian Settings dialog so the sync overlay is unobstructed.
+      (this.app as any).setting?.close?.();
       // Kick off initial sync immediately
       void this.runInitialFlow(email, password);
     });
