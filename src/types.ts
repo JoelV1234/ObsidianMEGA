@@ -9,6 +9,7 @@ export interface MegaSyncSettings {
   setupComplete: boolean;
   email: string | null;
   encryptedPassword: string | null;
+  encryptedSession: string | null;
   remoteFolderPath: string | null;
   remoteFolderHandle: string | null;
   initialSyncComplete: boolean;
@@ -19,6 +20,7 @@ export const DEFAULT_SETTINGS: MegaSyncSettings = {
   setupComplete: false,
   email: null,
   encryptedPassword: null,
+  encryptedSession: null,
   remoteFolderPath: null,
   remoteFolderHandle: null,
   initialSyncComplete: false,

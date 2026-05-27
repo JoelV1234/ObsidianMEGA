@@ -1,7 +1,7 @@
 import { Notice, Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, MegaSyncSettings, SyncProgress } from "./types";
 import { encryptString, decryptString, clearLocalKey } from "./crypto";
-import { MegaClient } from "./mega-client";
+import { MegaClient, prefetchMega } from "./mega-client";
 import { SyncEngine, vaultIsEmptyExceptObsidian } from "./sync-engine";
 import { SetupModal } from "./setup-modal";
 import { SyncOverlay } from "./sync-overlay";
@@ -21,6 +21,10 @@ export default class MegaSyncPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
+
+    // Begin parsing the megajs bundle in the background so the first login
+    // doesn't pay for it on the critical path.
+    prefetchMega();
 
     this.statusBarItem = this.addStatusBarItem();
     this.statusBarItem.addClass("mega-sync-status");
@@ -99,6 +103,35 @@ export default class MegaSyncPlugin extends Plugin {
     modal.open();
   }
 
+  private async connectToMega(email: string, password: string): Promise<void> {
+    if (this.settings.encryptedSession) {
+      try {
+        const session = await decryptString(this.settings.encryptedSession);
+        this.overlay.update({ status: "syncing", message: "Resuming MEGA session…" });
+        await this.client.loginWithSession(session);
+        // Refresh stored session in case megajs rotated anything.
+        await this.persistSession();
+        return;
+      } catch (e: any) {
+        // Cached session was rejected (revoked, password change, corrupt blob, etc.).
+        // Drop it and fall back to password login.
+        console.warn("MEGA Sync: cached session rejected, falling back to password login.", e);
+        this.settings.encryptedSession = null;
+        await this.saveSettings();
+      }
+    }
+    this.overlay.update({ status: "syncing", message: "Signing in to MEGA…" });
+    await this.client.login(email, password);
+    await this.persistSession();
+  }
+
+  private async persistSession(): Promise<void> {
+    const session = this.client.exportSession();
+    if (!session) return;
+    this.settings.encryptedSession = await encryptString(session);
+    await this.saveSettings();
+  }
+
   private async resumeAfterSetup(): Promise<void> {
     if (!this.settings.encryptedPassword || !this.settings.email) {
       this.updateProgress({
@@ -132,8 +165,13 @@ export default class MegaSyncPlugin extends Plugin {
     });
     this.overlay.show({ status: "syncing", message: "Connecting to MEGA…" });
 
+    const timings: Record<string, number> = {};
+    const tStart = performance.now();
+
     try {
-      await this.client.login(email, password);
+      const tConnect = performance.now();
+      await this.connectToMega(email, password);
+      timings.connect = performance.now() - tConnect;
     } catch (e: any) {
       const msg = e?.message || String(e);
       this.updateProgress({ status: "error", message: "Sign-in failed", errorDetail: msg });
@@ -153,12 +191,24 @@ export default class MegaSyncPlugin extends Plugin {
     });
 
     try {
+      const tSync = performance.now();
       await this.engine.runInitialSync();
+      timings.sync = performance.now() - tSync;
       this.settings.initialSyncComplete = true;
       await this.saveSettings();
       this.overlay.hide();
       this.unlockReadOnly();
-      new Notice("MEGA Sync: vault mirrored from MEGA.");
+      const total = performance.now() - tStart;
+      const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
+      const sub = this.client.lastTimings;
+      const subParts: string[] = [];
+      if (sub.megajsLoad !== undefined) subParts.push(`lib ${fmt(sub.megajsLoad)}`);
+      if (sub.treeFetch !== undefined) subParts.push(`tree ${fmt(sub.treeFetch)}`);
+      const subStr = subParts.length ? ` (${subParts.join(", ")})` : "";
+      new Notice(
+        `MEGA Sync ready. connect ${fmt(timings.connect)}${subStr} · sync ${fmt(timings.sync)} · total ${fmt(total)}`,
+        15000,
+      );
     } catch (e: any) {
       const msg = e?.message || String(e);
       this.updateProgress({

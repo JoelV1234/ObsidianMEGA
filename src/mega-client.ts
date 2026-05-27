@@ -4,12 +4,24 @@ type MegaFile = any;
 type MegaStorage = any;
 
 let _Storage: any = null;
+let _loading: Promise<any> | null = null;
 async function loadMega(): Promise<any> {
   if (_Storage) return _Storage;
-  const mod: any = await import("megajs");
-  _Storage = mod.Storage || mod.default?.Storage || mod.default;
-  if (!_Storage) throw new Error("Failed to load MEGA library");
-  return _Storage;
+  if (!_loading) {
+    _loading = import("megajs").then((mod: any) => {
+      _Storage = mod.Storage || mod.default?.Storage || mod.default;
+      if (!_Storage) throw new Error("Failed to load MEGA library");
+      return _Storage;
+    });
+  }
+  return _loading;
+}
+
+/** Kick off the megajs dynamic import so it's parsed before the first login. */
+export function prefetchMega(): void {
+  void loadMega().catch(() => {
+    // ignore — real error will surface on actual login
+  });
 }
 
 export class MegaClient {
@@ -22,6 +34,51 @@ export class MegaClient {
     await storage.ready;
     this.storage = storage;
     this.email = email;
+  }
+
+  lastTimings: Record<string, number> = {};
+
+  /**
+   * Resume a previously saved MEGA session, skipping PBKDF2 key derivation.
+   * Throws if the session is malformed, rejected by MEGA, or the tree fetch fails.
+   */
+  async loginWithSession(sessionJson: string): Promise<void> {
+    const tLoad = performance.now();
+    const Storage = await loadMega();
+    this.lastTimings.megajsLoad = performance.now() - tLoad;
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(sessionJson);
+    } catch (e: any) {
+      throw new Error(`Invalid session blob: ${e?.message || e}`);
+    }
+    const storage = Storage.fromJSON(parsed);
+    await storage.ready;
+
+    // fromJSON leaves the file tree unloaded — pull it now.
+    const tTree = performance.now();
+    await new Promise<void>((resolve, reject) => {
+      storage.reload(true, (err: any) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+    this.lastTimings.treeFetch = performance.now() - tTree;
+
+    storage.status = "ready";
+    this.storage = storage;
+    this.email = parsed.options?.email ?? null;
+  }
+
+  /** Serialize the current session for later resume. Returns null if not logged in. */
+  exportSession(): string | null {
+    if (!this.storage) return null;
+    try {
+      return JSON.stringify(this.storage.toJSON());
+    } catch {
+      return null;
+    }
   }
 
   isLoggedIn(): boolean {

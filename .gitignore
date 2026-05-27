@@ -2,7 +2,6 @@
 node_modules/
 
 # Build output
-main.js
 *.map
 
 # Plugin runtime state (contains encrypted credentials, sync index, MEGA folder handle)
